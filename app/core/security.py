@@ -1,4 +1,5 @@
 import bcrypt
+import hashlib
 from datetime import datetime, timezone ,timedelta
 from jose import JWTError , jwt
 from app.core.config import settings
@@ -39,19 +40,21 @@ def create_access_tokens(user_id:str):
 
 def create_refresh_tokens(user_id:str):
     now  = datetime.now(timezone.utc)
-
+    expires_at = now + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
     payload = {
         "sub":user_id,
         "token_type":"refresh",
         "iat":now,
-        "exp" : now + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+        "exp" : expires_at
     }
 
-    return jwt.encode(
+    token = jwt.encode(
         payload,
         settings.JWT_REFRESH_SECRET_KEY,
         settings.JWT_ALGORITHM  
     )
+
+    return token,expires_at
 
 
 # def verify_token(token:str):
@@ -104,5 +107,13 @@ def verify_password(password:str , hashed_password:str)-> bool:
         password.encode("utf-8"),
         hashed_password.encode("utf-8")
     )
+
+def hash_refresh_token(token:str)->str:
+    return hashlib.sha256(
+        token.encode("utf-8")
+    ).hexdigest()
+
+def verify_hashed_refresh_token(token:str ,hashed_token:str)-> bool:
+    return hash_refresh_token(token) == hashed_token
 
 
