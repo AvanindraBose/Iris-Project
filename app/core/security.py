@@ -1,3 +1,4 @@
+import json
 import bcrypt
 import hashlib
 from datetime import datetime, timezone ,timedelta
@@ -117,3 +118,6 @@ def verify_hashed_refresh_token(token:str ,hashed_token:str)-> bool:
     return hash_refresh_token(token) == hashed_token
 
 
+def make_cache_key(data:dict):
+    data_string = json.dumps(data,sort_keys=True)
+    return hashlib.sha256(data_string.encode()).hexdigest()
