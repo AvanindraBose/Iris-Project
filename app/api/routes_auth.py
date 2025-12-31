@@ -1,4 +1,4 @@
-from fastapi import APIRouter,HTTPException,status,Depends
+from fastapi import APIRouter,HTTPException,status,Depends,Request
 from app.core.security import create_access_tokens, create_refresh_tokens,verify_refresh_token,verify_password,hash_password,hash_refresh_token,verify_hashed_refresh_token
 from app.schemas.users_auth import UserCreate,UserLogin
 from app.core.dependecies import get_db
@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.db.models.users import User
 from app.db.models.refresh_token import RefreshToken
 from datetime import datetime, timezone
+from app.core.rate_limiter import login_rate_limiter , refresh_rate_limiter,predict_rate_limiter
 
 router = APIRouter(prefix="/auth",tags=["Auth"])
 
@@ -42,7 +43,7 @@ def signup(user_input:UserCreate , db:Session = Depends(get_db)):
     }
 
 @router.post("/login")
-def login(user_input:UserLogin , db:Session = Depends(get_db)):
+def login(request:Request , user_input:UserLogin , db:Session = Depends(get_db) , _ = Depends(login_rate_limiter)):
     db_user = db.query(User).filter(
         User.email == user_input.email
     ).first()
@@ -103,7 +104,8 @@ def refresh_access_tokens(refresh_token:str, db:Session = Depends(get_db)):
         )
     
     user_id = payload["sub"]
-    
+    refresh_rate_limiter(user_id)
+
     db_token = (db.query(RefreshToken).filter(
         RefreshToken.user_id == user_id
     ).with_for_update().first())
