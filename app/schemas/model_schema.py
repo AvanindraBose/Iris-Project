@@ -1,4 +1,4 @@
-from pydantic import BaseModel , float
+from pydantic import BaseModel
 
 class ModelInputSchema(BaseModel):
     sepal_length:float

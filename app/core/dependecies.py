@@ -1,10 +1,10 @@
 import joblib
 import redis
 import os
-from fastapi import Header,HTTPException,status,Depends
+from fastapi import Header,HTTPException,status,Depends,Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from app.core.config import settings
-from app.core.security import verify_access_token
+from app.core.security import verify_access_token , verify_refresh_token
 from app.core.database import SessionLocal
 from dotenv import load_dotenv
 
@@ -50,5 +50,33 @@ def get_model():
     if _model is None:
         _model = joblib.load(settings.MODEL_PATH)
     return _model
+
+def get_refresh_user_id(request: Request) -> str:
+    # print("Cookies:", request.cookies) 
+    refresh_token = request.cookies.get("refresh_token")
+
+    if not refresh_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired refresh token"
+        )
+
+    payload = verify_refresh_token(refresh_token)
+
+    if not payload:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired refresh token"
+        )
+
+    user_id = payload.get("sub")
+
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired refresh token"
+        )
+
+    return user_id
 
 
