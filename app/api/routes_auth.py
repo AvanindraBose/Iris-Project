@@ -1,3 +1,4 @@
+import logging
 from fastapi import APIRouter,HTTPException,status,Depends,Request
 from fastapi.responses import JSONResponse
 from app.core.security import create_access_tokens, create_refresh_tokens,verify_refresh_token,verify_password,hash_password,hash_refresh_token,verify_hashed_refresh_token
@@ -10,6 +11,7 @@ from datetime import datetime, timezone
 from app.core.rate_limiter import login_rate_limiter , refresh_rate_limiter
 
 router = APIRouter(prefix="/auth",tags=["Auth"])
+logger = logging.getLogger(__name__)
 
 @router.post("/signup")
 def signup(user_input:UserCreate , db:Session = Depends(get_db)):
@@ -32,8 +34,13 @@ def signup(user_input:UserCreate , db:Session = Depends(get_db)):
         db.add(new_user)
         db.commit()
         db.refresh(new_user)
-    except :
+    except Exception:
         db.rollback()
+        logger.error(
+            "Signup failed due to DB error",
+            exc_info=True,
+            extra = {user_input.email}
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail = "Could not create user , please try again"
@@ -80,8 +87,13 @@ def login(request:Request , user_input:UserLogin , db:Session = Depends(get_db) 
         )
             db.add(new_refresh_token)
         db.commit()
-    except Exception as e :
+    except Exception:
         db.rollback()
+        logger.error(
+            "Login Token Persistance Failed",
+            exc_info= True,
+            extra={"user_id":db_user.id}
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail = "Could not create tokens , please try again"
@@ -98,7 +110,7 @@ def login(request:Request , user_input:UserLogin , db:Session = Depends(get_db) 
         key = "refresh_token",
         value = refresh_token,
         httponly=True,
-        secure=False,
+        secure=True,
         samesite="lax",
         path = "/",
         max_age = max_age
@@ -130,6 +142,10 @@ def refresh_access_tokens(request:Request, db:Session = Depends(get_db), _= Depe
     ).with_for_update().first())
 # Important technique for row locking
     if db_token is None : 
+        logger.warning(
+            "Valid refresh JWT but no DB token found",
+            extra={"user_id": user_id}
+        )
         raise HTTPException(
             status_code = status.HTTP_401_UNAUTHORIZED,
             detail = "Refresh Token not found Please login again"
@@ -152,8 +168,13 @@ def refresh_access_tokens(request:Request, db:Session = Depends(get_db), _= Depe
         db_token.token = hash_refresh_token(new_refresh_token)
         db_token.expires_at = expires_at
         db.commit()
-    except:
+    except Exception:
         db.rollback()
+        logger.error(
+            "Refresh token rotation failed",
+            exc_info=True,
+            extra={"user_id": user_id}
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail = "Could not refresh tokens , please try again"
@@ -170,7 +191,7 @@ def refresh_access_tokens(request:Request, db:Session = Depends(get_db), _= Depe
         key = "refresh_token",
         value = new_refresh_token,
         httponly=True,
-        secure=False,
+        secure=True,
         samesite="lax",
         path = "/",
         max_age = max_age
@@ -179,9 +200,15 @@ def refresh_access_tokens(request:Request, db:Session = Depends(get_db), _= Depe
 
 @router.post("/logout")
 def logout(
-    refresh_token: str,
+    request: Request,
     db: Session = Depends(get_db)
 ):
+    refresh_token = request.cookies.get("refresh_token")
+    if not refresh_token:
+     raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Refresh token missing"
+    )
     payload = verify_refresh_token(refresh_token)
 
     if payload is None:
@@ -209,8 +236,13 @@ def logout(
     try:
         db.delete(db_token)
         db.commit()
-    except:
+    except Exception:
         db.rollback()
+        logger.error(
+            "Logout DB operation failed",
+            exc_info=True,
+            extra={"user_id": user_id}
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Logout failed"
