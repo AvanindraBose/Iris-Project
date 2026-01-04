@@ -1,0 +1,12 @@
+.git
+.venv
+__pycache__
+*.log
+*.csv
+*.zip
+*.tar
+node_modules
+.env
+tests/
+notebooks/
+data/
