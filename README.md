@@ -271,7 +271,7 @@ Safe rollback mechanisms
 
 The following diagram illustrates the end-to-end production architecture of the ML inference system, including API services, container orchestration, CI/CD, monitoring, and logging.
 
-![ML Production Architecture](app/docs/IrisPrpjectArchitechture.drawio.png)
+![ML Production Architecture](app/docs/IrisProjectArchitechture.jpg)
 
 ## Conclusion
 
