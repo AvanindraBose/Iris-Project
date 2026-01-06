@@ -5,7 +5,7 @@
 This repository implements a production-ready ML inference system using modern backend, containerization, orchestration, monitoring, and observability best practices.
 The system is designed to ensure secure deployment, high availability, controlled model releases, and deep observability for machine learning workloads.
 
-The architecture focuses on:
+**The architecture focuses on:**
 
 Scalable API-based ML inference
 
@@ -87,19 +87,19 @@ Registry access is secured via credentials or tokens
 
 The CI/CD pipeline is implemented using GitHub Actions.
 
-Pipeline Flow
+**Pipeline Flow:**
 
-Code pushed to GitHub
+1. Code pushed to GitHub
 
-Automated tests executed
+2. Automated tests executed
 
-Docker image built
+3. Docker image built
 
-Image pushed to container registry
+4. Image pushed to container registry
 
-Kubernetes deployment updated
+5. Kubernetes deployment updated
 
-Health checks validate rollout
+6. Health checks validate rollout
 
 This ensures repeatable, auditable, and safe deployments.
 
@@ -107,45 +107,39 @@ This ensures repeatable, auditable, and safe deployments.
 ## Selected Strategy: Canary Deployment
 **Why Canary Deployment?**
 
-Canary deployment is particularly suitable for ML systems because:
+**Canary deployment is particularly suitable for ML systems because:**
 
-ML models can behave unpredictably on real-world data
+1. ML models can behave unpredictably on real-world data
 
-Offline validation does not guarantee production performance
+2. Offline validation does not guarantee production performance
 
-Silent failures (e.g., degraded predictions) are common
+3. Silent failures (e.g., degraded predictions) are common
 
 **With canary deployment:**
 
-A small percentage of traffic is routed to the new model version
+A small percentage of traffic is routed to the new model version.The majority of users continue using the stable version. Performance is observed before full rollout. Risks Reduced by Canary Deployment.
 
-The majority of users continue using the stable version
+**Canary deployment significantly reduces the following risks:**
 
-Performance is observed before full rollout
+1. Model performance regression
 
-Risks Reduced by Canary Deployment
+2. Increased latency due to larger models
 
-Canary deployment significantly reduces the following risks:
+3. Unexpected errors from feature mismatches
 
-Model performance regression
+4. Data distribution drift
 
-Increased latency due to larger models
+5. Production-wide outages
 
-Unexpected errors from feature mismatches
+**If issues are detected:**
 
-Data distribution drift
+1. Traffic can be immediately reverted
 
-Production-wide outages
+2. No redeployment is required
 
-If issues are detected:
+3. Business impact is minimal
 
-Traffic can be immediately reverted
-
-No redeployment is required
-
-Business impact is minimal
-
-Observability and Reliability
+4. Observability and Reliability
 
 The deployed ML service is designed to be observable, stable, and reliable.
 
@@ -198,9 +192,8 @@ Stored in Loki
 
 Visualized via Grafana
 
-How Logs Help Debug Failures
 
-Logs provide critical insights such as:
+**Logs provide critical insights such as:**
 
 Incoming request payloads
 
@@ -212,7 +205,7 @@ Database connection issues
 
 Cache misses or timeouts
 
-This enables:
+**This enables:**
 
 Faster root-cause analysis
 
@@ -278,7 +271,7 @@ Safe rollback mechanisms
 
 The following diagram illustrates the end-to-end production architecture of the ML inference system, including API services, container orchestration, CI/CD, monitoring, and logging.
 
-![ML Production Architecture](docs/architecture.png)
+![ML Production Architecture](app/docs/architecture.png)
 
 ## Conclusion
 
