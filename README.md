@@ -1,4 +1,4 @@
-## A04 Model Deployment Capstone Projec -> Iris Project Architecture
+## A04 Model Deployment Capstone Project -> Iris Project Architecture
 
 ## Overview
 
