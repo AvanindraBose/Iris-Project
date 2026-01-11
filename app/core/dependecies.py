@@ -1,13 +1,15 @@
 import joblib
-import redis
 import logging
 import os
 from fastapi import Header,HTTPException,status,Depends,Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from app.core.config import settings
 from app.core.security import verify_access_token , verify_refresh_token
-from app.core.database import SessionLocal
+from app.core.database import AsyncSessionLocal
+from typing import AsyncGenerator
 from dotenv import load_dotenv
+from sqlalchemy.ext.asyncio import AsyncSession
+from redis.asyncio import Redis
 
 load_dotenv()
 logger = logging.getLogger(__name__)
@@ -21,12 +23,12 @@ def get_api_key(api_key:str = Header(...)):
             detail="Invalid API Key"
         )
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
+    async with AsyncSessionLocal() as session:
+        try:
+            yield session
+        finally:
+            await session.close()
 
 
 def get_current_user(
@@ -42,17 +44,19 @@ def get_current_user(
     
     return payload["sub"]
 
-def get_redis_client():
-    try :
-        return redis.StrictRedis.from_url(REDIS_URL,decode_responses=True,socket_timeout=2,socket_connect_timeout=2)
-    except redis.RedisError:
-        logger.critical(
-            "Redis connection failed",
-            exc_info=True
+def get_redis_client() -> Redis:
+    try:
+        return Redis.from_url(
+            REDIS_URL,
+            decode_responses=True,
+            socket_timeout=2,
+            socket_connect_timeout=2,
         )
+    except Exception:
+        logger.critical("Redis connection failed", exc_info=True)
         raise HTTPException(
-            status_code= status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Service Temporarily Unavailable"
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Service Temporarily Unavailable",
         )
 
 _model = None

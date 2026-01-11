@@ -10,9 +10,9 @@ logger = logging.getLogger("Prediction")
 router = APIRouter(tags=["Predict"])
 
 @router.post("/predict")
-def predict(data:ModelInputSchema , user = Depends(get_current_user) , __=Depends(predict_rate_limiter)):
+async def predict(data:ModelInputSchema , user = Depends(get_current_user) , _=Depends(predict_rate_limiter)):
     try : 
-        prediction = predict_flower(data.model_dump())
+        prediction = await predict_flower(data.model_dump())
         return prediction
     except Exception as e:
         logger.error(f"Prediction error: {e}")

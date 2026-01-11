@@ -1,13 +1,23 @@
 from fastapi import FastAPI
 from app.api import routes_auth,routes_predict, routes_health
+from contextlib import asynccontextmanager
 from app.core.database import engine,Base
 from app.middlewares.response_logger import ResponseLoggerMiddleware
 from app.core.exception import register_exception_handlers
 from app.core import logging_config
 from prometheus_fastapi_instrumentator import Instrumentator
 
-app = FastAPI()
-Base.metadata.create_all(bind=engine)
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    yield
+
+    # Shutdown
+    await engine.dispose()
+app = FastAPI(lifespan=lifespan)
 app.add_middleware(ResponseLoggerMiddleware)
 
 app.include_router(routes_auth.router , tags = ["Auth"])
