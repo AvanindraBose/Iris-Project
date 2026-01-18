@@ -17,3 +17,6 @@ asyncpg
 psycopg2-binary
 passlib[bcrypt]
 pydantic[email]
+
+mlflow
+hyperopt
