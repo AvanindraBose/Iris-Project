@@ -1,4 +1,3 @@
-import joblib
 import logging
 import os
 from fastapi import Header,HTTPException,status,Depends,Request
@@ -10,6 +9,8 @@ from typing import AsyncGenerator
 from dotenv import load_dotenv
 from sqlalchemy.ext.asyncio import AsyncSession
 from redis.asyncio import Redis
+from app.core.model_loader import load_model
+
 
 load_dotenv()
 logger = logging.getLogger(__name__)
@@ -58,22 +59,11 @@ def get_redis_client() -> Redis:
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Service Temporarily Unavailable",
         )
-
-_model = None
-
+#  Model Related Dependencies
+# Prefer Lazy Loading to avoid startup delays
 def get_model():
-    global _model
-    if _model is None:
-        try :
-            _model = joblib.load(settings.MODEL_PATH)
-            logger.info("ML model loaded successfully")
-        except Exception:
-            logger.critical(
-                "Failed to load ML model",
-                exc_info=True
-            )
-            raise RuntimeError("Model initialization failed")
-    return _model
+    return load_model()
+
 
 def get_refresh_user_id(request: Request) -> str:
     # print("Cookies:", request.cookies) 
